@@ -46,8 +46,9 @@ O usuário irá verificar a sua concordância com a postagem criada por meio da 
 
 
 
-<img src="https://render.githubusercontent.com/render/math?math=chance = \left(1 - \frac{|x0 - x1|}{2}\right)\times age">
+<img src="https://render.githubusercontent.com/render/math?math=chance = \left(1 - \frac{|pos\_pessoa - pos\_post|}{2}\right)\times age">
 
+A posição do agente é dada por *pos_pessoa*, e a posição da postagem por *pos_post*. A diferença é divida por 2 (a maior diferença possível em nossa escala) e multiplicada pelo fator de envelhecimento da postagem (age). Um post recém criado tem 100\% de chances de ser compartilhado, um post do dia anterior 75\%, de dois dias atrás 50\%, três dias atrás 25\% e post mais antigos do que isso são eliminados do sistema.
 
 
 ## Medidas de espalhamento

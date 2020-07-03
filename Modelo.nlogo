@@ -2,6 +2,7 @@ extensions [nw]
 
 globals [
   prob-posting
+  post-ids          ; generate unique ids for the posts
 ]
 
 breed [users user]
@@ -11,7 +12,7 @@ users-own [
   public-group?
   id-group
   num-posts
-  posts-list          ; temp variable to get the posts of the neighbors or public group
+  posts-set          ; temp variable to get the posts of the neighbors or public group
 ]
 
 breed [posts post]
@@ -19,8 +20,10 @@ breed [posts post]
 posts-own [
   positioning            ; content
   user-creator           ; the original creator of the post
+  user-source            ; if post was shared, where from?
   user-shared            ; the user who shared the post
   time-of-creation       ; ticks of creation
+  u-id                   ; unique id for each post to avoid repetition
 ]
 
 
@@ -34,6 +37,7 @@ end
 
 to setup-globals
   set prob-posting 0.034
+  set post-ids 0            ; initiate posts ids registers
 end
 
 
@@ -51,14 +55,21 @@ to generate-posts
       hatch-posts 1 [
         set shape "letter sealed"
         set size 2
+        set color white
         ; positioning is connected to the creator of the post
         set positioning random-normal [user-positioning] of myself 0.1
         ; creator
         set user-creator myself
         ; not shared, original post
         set user-shared nobody
+        set user-source nobody
         ; time of creation
         set time-of-creation ticks
+
+        ; set unique id and increment it
+        set u-id post-ids
+        set post-ids post-ids + 1
+
         ; move to the patch where the creator is
         move-to myself
       ]
@@ -80,32 +91,53 @@ to sharing-decision
   ; ask users to retrieve the posts created last time step (?) by their neighbors
   ask users [
     ; return posts on same patch as the neighbors not older than 4 steps
-    set posts-list (posts-on link-neighbors) with [ not hidden? ]
-    if debug? [type "User " type self type ": " type count posts-list type " posts to read\n"]
+    set posts-set (posts-on link-neighbors) with [ not hidden? ]
+    if debug? [type "User " type self type ": " type count posts-set type " posts to read\n"]
 
-    ask posts-list [
-      let age-post ticks - time-of-creation
+    ; to use inside the scope of hatch-posts
+    let current-user self
 
+    ask posts-set [
+      ; posts are created during previous tick. That is, the newest posts are from ticks - 1
+      let age-post (ticks - 1) - time-of-creation
+      let age-factor 1 - (age-post * 0.25)
+      let chance (1 - abs (positioning - [user-positioning] of myself ) )* age-factor / 2
+      if debug? [type "User " type myself type "(Post " type self  type ")" type "\n"]
+      if debug? [type "User positioning: " type [user-positioning] of myself type "\t post positioning: " type positioning type "\t Chances: " type chance type "\n"]
+
+      let current-post self
+
+      ; verify chance and if there is already a post on that user with the same unique id
+      if (random-float 1 < chance) and (not any? (posts-on current-user) with [u-id = [u-id] of current-post]) [
+        ; when sharing a post, a new post is created and moved to where the user who shared it is
+
+        hatch-posts 1 [
+          set color red
+          ; in this context, myself is the post from the set, and self is the new post created
+          if debug? [type "HATCH " type self type myself type "\n" ]
+
+          ; same unique id
+          set u-id [u-id] of myself
+          ; same positioning from original post
+          set positioning [positioning] of myself
+          ; same creator of the original post
+          set user-creator [user-creator] of myself
+
+          ; who is source for the shared post? the user on same patch
+          set user-source one-of users-on myself
+
+          set time-of-creation ticks
+
+          ; the user sharing it now
+          set user-shared current-user
+          move-to current-user
+        ]
+      ]
     ]
-
     ;if public-group? [ let group-list posts-on users with [id-group = [id-group] of myself ] ]
-
-    ;if debug? [type self type posts-list type "\n"]
-
-    ;foreach posts-list
   ]
 end
 
-to share-post [user-id post2share]
-  ; when sharing a post, a new post is created and moved to where the user who shared it is
-  create-posts 1 [
-    set positioning [positioning] of post2share
-    set user-creator [user-creator] of post2share
-    set user-shared user-id
-    set time-of-creation ticks
-    move-to user user-id
-  ]
-end
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -267,7 +299,7 @@ SWITCH
 259
 debug?
 debug?
-0
+1
 1
 -1000
 
