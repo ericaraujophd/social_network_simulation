@@ -44,9 +44,9 @@ Cada membro da rede poderá gerar uma postagem a cada passo do modelo com probab
 
 O usuário irá verificar a sua concordância com a postagem criada por meio da verificação da diferença entre o conteúdo do post e sua opinião pessoal. Esse cálculo é feito considerando a seguinte fórmula:
 
-$$chance = 1 - |x0 - x1|/2$$
 
-<img src="https://render.githubusercontent.com/render/math?math=e^{i \pi} = -1">
+
+<img src="https://render.githubusercontent.com/render/math?math=chance = \left(1 - \frac{|x0 - x1|}{2}\right)\times age">
 
 
 
