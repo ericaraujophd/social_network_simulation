@@ -46,7 +46,8 @@ O usuário irá verificar a sua concordância com a postagem criada por meio da 
 
 $$chance = 1 - |x0 - x1|/2$$
 
-![formula](https://render.githubusercontent.com/render/math?math=e^{i \pi} = -1)
+<img src="https://render.githubusercontent.com/render/math?math=e^{i \pi} = -1">
+
 
 
 ## Medidas de espalhamento
