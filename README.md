@@ -42,7 +42,9 @@ Cada membro da rede poderá gerar uma postagem a cada passo do modelo com probab
 
 ## Modelo de decisão de compartilhamento
 
-O usuário irá verificar a sua concordância com a postagem criada por meio da verificação da diferença entre o conteúdo do post e sua opinião pessoal. 
+O usuário irá verificar a sua concordância com a postagem criada por meio da verificação da diferença entre o conteúdo do post e sua opinião pessoal. Esse cálculo é feito considerando a seguinte fórmula:
+
+$$chance = 1 - |x0 - x1|/2$$
 
 ## Medidas de espalhamento
 

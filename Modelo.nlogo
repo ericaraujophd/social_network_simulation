@@ -11,6 +11,7 @@ users-own [
   public-group?
   id-group
   num-posts
+  posts-list          ; temp variable to get the posts of the neighbors or public group
 ]
 
 breed [posts post]
@@ -37,8 +38,8 @@ end
 
 
 to go
+  sharing-decision
   generate-posts
-  timeline
   tick
 end
 
@@ -49,29 +50,47 @@ to generate-posts
       ; generates a post
       hatch-posts 1 [
         set shape "letter sealed"
+        set size 2
+        ; positioning is connected to the creator of the post
         set positioning random-normal [user-positioning] of myself 0.1
+        ; creator
         set user-creator myself
+        ; not shared, original post
         set user-shared nobody
+        ; time of creation
         set time-of-creation ticks
+        ; move to the patch where the creator is
         move-to myself
       ]
       set num-posts num-posts + 1
+    ]
+  ]
+
+  ;; posts that got old are not visible anymore
+  ask posts [
+    if time-of-creation <= ticks - 4 [
+      set hidden? true
     ]
   ]
 end
 
 
 
-to timeline
+to sharing-decision
   ; ask users to retrieve the posts created last time step (?) by their neighbors
   ask users [
     ; return posts on same patch as the neighbors not older than 4 steps
-    ; avoid posts created now, and older than 4 time steps behind
-    let posts-list posts-on link-neighbors with [ time-of-creation > ticks - 5 and time-of-creation != ticks ]
+    set posts-list (posts-on link-neighbors) with [ not hidden? ]
+    if debug? [type "User " type self type ": " type count posts-list type " posts to read\n"]
 
-    if public-group? [ let group-list posts-on users with [id-group = [id-group] of myself ] ]
+    ask posts-list [
+      let age-post ticks - time-of-creation
 
-    if debug? [type self type posts-list type "\n"]
+    ]
+
+    ;if public-group? [ let group-list posts-on users with [id-group = [id-group] of myself ] ]
+
+    ;if debug? [type self type posts-list type "\n"]
 
     ;foreach posts-list
   ]
@@ -95,7 +114,7 @@ end
 
 
 to generate-network
-  nw:generate-small-world users links 2 10 2.0 false [
+  nw:generate-small-world users links 2 5 2.0 false [
 
     set user-positioning (random-float 2) - 1
     ifelse random-float 1 <= (perc-public-groups / 100) [
