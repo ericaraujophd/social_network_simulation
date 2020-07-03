@@ -24,6 +24,8 @@ posts-own [
   user-shared            ; the user who shared the post
   time-of-creation       ; ticks of creation
   u-id                   ; unique id for each post to avoid repetition
+  shared?                ; if post was shared
+  fakenews?              ; if post is a fakenews
 ]
 
 
@@ -43,6 +45,7 @@ end
 
 to go
   sharing-decision
+  if public-groups? [sharing-public-group]
   generate-posts
   tick
 end
@@ -63,6 +66,8 @@ to generate-posts
         ; not shared, original post
         set user-shared nobody
         set user-source nobody
+        set shared? false
+        ifelse random-float 1 < (fakenews-rate / 100)[set fakenews? true][set fakenews? false]
         ; time of creation
         set time-of-creation ticks
 
@@ -117,16 +122,19 @@ to sharing-decision
           if debug? [type "HATCH " type self type myself type "\n" ]
 
           ; same unique id
-          set u-id [u-id] of myself
+          set u-id [u-id] of current-post
           ; same positioning from original post
-          set positioning [positioning] of myself
+          set positioning [positioning] of current-post
           ; same creator of the original post
-          set user-creator [user-creator] of myself
+          set user-creator [user-creator] of current-post
 
           ; who is source for the shared post? the user on same patch
-          set user-source one-of users-on myself
+          set user-source one-of users-on current-post
 
           set time-of-creation ticks
+          set shared? true
+
+          set fakenews? [fakenews?] of current-post
 
           ; the user sharing it now
           set user-shared current-user
@@ -140,13 +148,84 @@ end
 
 
 
+to sharing-public-group
+
+  ; define groups
+  ; group 0 - leftists
+  ; group 1 - centrists
+  ; group 2 - rightists
+  let group0 users with [public-group? and id-group = 0]
+  let group1 users with [public-group? and id-group = 1]
+  let group2 users with [public-group? and id-group = 2]
+
+  ; ask users who are part of public groups to check their posts
+  ask users with [public-group?] [
+
+    ; which group does the user belong
+    let user-group [id-group] of self
+
+    ; return posts on same patch as the people in the public group not older than 4 steps
+    ifelse user-group = 0 [ set posts-set (posts-on group0) with [ not hidden? ] ][
+      ifelse user-group = 1 [set posts-set (posts-on group1) with [ not hidden? ]] [
+        set posts-set (posts-on group2) with [ not hidden? ]
+      ]
+    ]
+
+    if debug? [type "User " type self type ": " type count posts-set type " posts to read\n"]
+
+    ; to use inside the scope of hatch-posts
+    let current-user self
+
+    ask posts-set [
+      ; posts are created during previous tick. That is, the newest posts are from ticks - 1
+      let age-post (ticks - 1) - time-of-creation
+      let age-factor 1 - (age-post * 0.25)
+      let chance (1 - abs (positioning - [user-positioning] of myself ) )* age-factor / 2
+      if debug? [type "User " type myself type "(Post " type self  type ")" type "\n"]
+      if debug? [type "User positioning: " type [user-positioning] of myself type "\t post positioning: " type positioning type "\t Chances: " type chance type "\n"]
+
+      let current-post self
+
+      ; verify chance and if there is already a post on that user with the same unique id
+      if (random-float 1 < chance) and (not any? (posts-on current-user) with [u-id = [u-id] of current-post]) [
+        ; when sharing a post, a new post is created and moved to where the user who shared it is
+
+        hatch-posts 1 [
+          set color red
+          ; in this context, myself is the post from the set, and self is the new post created
+          if debug? [type "HATCH " type self type myself type "\n" ]
+
+          ; same unique id
+          set u-id [u-id] of current-post
+          ; same positioning from original post
+          set positioning [positioning] of current-post
+          ; same creator of the original post
+          set user-creator [user-creator] of current-post
+
+          ; who is source for the shared post? the user on same patch
+          set user-source one-of users-on current-post
+
+          set time-of-creation ticks
+          set shared? true
+
+          set fakenews? [fakenews?] of current-post
+          ; the user sharing it now
+          set user-shared current-user
+          move-to current-user
+        ]
+      ]
+    ]
+    ;if public-group? [ let group-list posts-on users with [id-group = [id-group] of myself ] ]
+  ]
+end
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; AUXILIAR FUNCTIONS ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
 to generate-network
-  nw:generate-small-world users links 2 5 2.0 false [
+  nw:generate-small-world users links 100 10 2.0 false [
 
     set user-positioning (random-float 2) - 1
     ifelse random-float 1 <= (perc-public-groups / 100) [
@@ -265,10 +344,10 @@ perc-public-groups
 HORIZONTAL
 
 BUTTON
-376
-113
-442
-146
+760
+13
+826
+46
 setup
 setup
 NIL
@@ -288,15 +367,15 @@ SWITCH
 282
 graphics?
 graphics?
-0
+1
 1
 -1000
 
 SWITCH
-390
-226
-493
-259
+60
+293
+178
+326
 debug?
 debug?
 1
@@ -304,10 +383,27 @@ debug?
 -1000
 
 BUTTON
-510
-129
-573
-162
+760
+71
+827
+104
+go
+go
+T
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
+
+BUTTON
+759
+127
+828
+160
 go
 go
 NIL
@@ -319,6 +415,52 @@ NIL
 NIL
 NIL
 1
+
+SWITCH
+62
+339
+214
+372
+public-groups?
+public-groups?
+1
+1
+-1000
+
+PLOT
+383
+206
+718
+498
+Number of Posts
+Time
+Number
+0.0
+10.0
+0.0
+10.0
+true
+true
+"" ""
+PENS
+"Total" 1.0 0 -16777216 true "" "plot count posts"
+"Shared" 1.0 0 -2674135 true "" "plot count posts with [shared?]"
+"Fakenews" 1.0 0 -7500403 true "" "plot count posts with [fakenews?]"
+
+SLIDER
+317
+116
+489
+149
+fakenews-rate
+fakenews-rate
+0
+10
+10.0
+1
+1
+%
+HORIZONTAL
 
 @#$#@#$#@
 ## WHAT IS IT?
@@ -690,6 +832,42 @@ NetLogo 6.1.1
 @#$#@#$#@
 @#$#@#$#@
 @#$#@#$#@
+<experiments>
+  <experiment name="experiment" repetitions="10" runMetricsEveryStep="true">
+    <setup>setup</setup>
+    <go>go</go>
+    <timeLimit steps="30"/>
+    <metric>count posts</metric>
+    <metric>count posts with [shared?]</metric>
+    <metric>count posts with [fakenews? and not shared?]</metric>
+    <metric>count posts with [fakenews? and shared?]</metric>
+    <metric>count users with [public-group?]</metric>
+    <metric>count users with [id-group = 0]</metric>
+    <metric>count users with [id-group = 1]</metric>
+    <metric>count users with [id-group = 2]</metric>
+    <metric>mean [num-posts] of users</metric>
+    <enumeratedValueSet variable="fakenews-rate">
+      <value value="10"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="public-groups?">
+      <value value="true"/>
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="num-users">
+      <value value="1000"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="graphics?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="debug?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="perc-public-groups">
+      <value value="8"/>
+      <value value="22"/>
+    </enumeratedValueSet>
+  </experiment>
+</experiments>
 @#$#@#$#@
 @#$#@#$#@
 default
