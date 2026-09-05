@@ -1,0 +1,24 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# OS
+.DS_Store
+Thumbs.db
+
+# NetLogo
+*.nlogo.bak
+
+# Large census datasets consumed by lib/ibge.py and lib/inep.py.
+# These are not redistributed here; see README for the download sources.
+data/
