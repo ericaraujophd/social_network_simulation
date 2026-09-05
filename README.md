@@ -71,7 +71,7 @@ Para mensurar o alcance das mensagens, contabilizaremos quantas vezes cada mensa
 │   └── Modelo experiment-spreadsheet.csv
 ├── imgs/                         # Figuras geradas pelos notebooks
 ├── requirements.txt              # Dependências diretas (versões atuais)
-└── requirements-frozen-2020.txt  # Ambiente exato usado nas execuções de 2020
+└── environment-frozen-2020.txt   # Ambiente exato usado nas execuções de 2020
 ```
 
 ## Como executar o modelo
@@ -163,7 +163,7 @@ resultados já publicados.
 
 ## Ambiente
 
-As execuções originais são de julho de 2020. `requirements-frozen-2020.txt` preserva o
+As execuções originais são de julho de 2020. `environment-frozen-2020.txt` preserva o
 `pip freeze` daquele ambiente. O `requirements.txt` atual lista apenas as dependências
 diretas, com versões mínimas, e foi verificado em Python 3.14 com pandas 3.0 — o
 carregamento dos resultados em `lib/get_df.py` continua funcionando sem alterações.

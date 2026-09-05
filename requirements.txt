@@ -3,7 +3,7 @@
 # Only the packages actually imported by the notebooks and by lib/ are listed
 # here, with lower bounds rather than exact pins, so the project stays
 # installable on current Python versions. The exact environment used for the
-# 2020 runs is preserved in requirements-frozen-2020.txt for reference.
+# 2020 runs is preserved in environment-frozen-2020.txt for reference.
 #
 #   python -m venv .venv && source .venv/bin/activate
 #   pip install -r requirements.txt
